@@ -1,6 +1,18 @@
-                                   memtester
+=====================================
+usage:
+ cd android/
+ source ./build/envsetup.sh
+ lunch xx
+ cd android/external/
+ git clone  https://github.com/royzhao/memtester4Android.git
+ cd memtester4Android
+ mm
+=====================================
+
+                        memtester
                                        
-  Utility to test for faulty memory subsystem.
+
+Utility to test for faulty memory subsystem.
   
     by Charles Cazabon <charlesc-memtester@pyropus.ca>
     
