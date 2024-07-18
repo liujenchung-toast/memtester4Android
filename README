@@ -1,14 +1,3 @@
-=====================================
-usage:
- cd android/
- source ./build/envsetup.sh
- lunch xx
- cd android/external/
- git clone  https://github.com/royzhao/memtester4Android.git
- cd memtester4Android
- mm
-=====================================
-
                                    memtester
                                        
   Utility to test for faulty memory subsystem.
@@ -19,7 +8,7 @@ usage:
     Version 2 Copyright 1999 Charles Cazabon.
     Version 3 not publicly released.
     Version 4 rewrite:
-    Copyright 2004-2012 Charles Cazabon.
+    Copyright 2004-2020 Charles Cazabon.
     Licensed under the terms of the GNU General Public License version 2 (only).
     See the file COPYING for details.
 
@@ -134,4 +123,26 @@ usage:
     Questions, comments, and feature requests should be
     directed to me at <charlesc-memtester@pyropus.ca>.  Read BUGS to report 
     bugs found in memtester.
+
+  Platform Compatibility Notes
+
+    As mentioned, memtester v4 was tested with a wide variety of Unix- and
+    Unix-like systems.  However, at least two issues with ancient HP/UX
+    versions, and one with Tru64, have come up since.
+
+    HP/UX versions prior to v11 do not support mlock() and will fail with an
+    invalid syscall error at runtime.  If you're building on HP/UX v10.20 or
+    similar, change `int do_mlock = 1` around line 128 of memtester.c to
+    `int do_mlock = 0` and rebuild.
+    They also are missing strtoull() from C99.  To fix this build error,
+    add `#define strtoull __strtoull` to the top of memtester.c; this should
+    at least work with a GCC toolchain.
+
+    Tru64 is missing strtoull() from C99.  To fix this build error when using
+    cc, add `#define strtoull strtoul` to the top of memtester.c; this is
+    safe because long on Tru64 is 64-bits.  This build problem could be dealt
+    with automatically, but I don't particularly want to invest the necessary
+    time, because Tru64 went out of support in 2012.  In addition, I no longer
+    have access to a build machine for testing on this platform.
+
 

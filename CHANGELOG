@@ -1,3 +1,27 @@
+Version 4.6.0
+19 December 2022
+  -fix warning on signedness of the ONE constant.  Thanks: Marek Vasut.
+  -add note to conf-cc about how to silence gcc's incorrect warning
+  "suggest parentheses around assignment".  Thanks: Marek Vasut.
+  -fix overflow in output for reported address.  Thanks: Marek Vasut.
+  -add note about randomizing values used at runtime by seeding PRNG.
+  Disabled by default for reproducibility.
+
+Version 4.5.1
+30 May 2021
+  -documentation-only update.
+  -add note to README about build problem with Tru64, with workaround.
+  Thanks: Víctor Ostorga.
+
+Version 4.5.0
+20 September 2020
+  -add note to README about problems with HP/UX prior to v.11.  Change code
+  so that buffer still gets aligned even if you comment out the use of mlock()
+  on such a platform.  Thanks: Keith Monahan.
+  -fix clear-buffer using incorrect param, causing spurious test failures.
+  Thanks: Debin Dong.
+  -fix shell-ism in Makefile.  Thanks: Fabrice Fontaine.
+
 Version 4.3.0
 9 June 2012
   -add ability to mmap a device other than /dev/mem, enabling easier testing
@@ -14,7 +38,7 @@ Version 4.2.2
   mlock; BSDs use this to indicate the lock failed due to being over a system
   or process limit, much like ENOMEM.
 
-  Version 4.2.1
+Version 4.2.1
 3 October 2010
   -fix offsets/addresses were not being reported correctly in test failure 
   messages.  Thanks: Anton Sergeev.

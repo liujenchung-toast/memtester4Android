@@ -4,7 +4,7 @@
  * Version 2 by Charles Cazabon <charlesc-memtester@pyropus.ca>
  * Version 3 not publicly released.
  * Version 4 rewrite:
- * Copyright (C) 2004-2012 Charles Cazabon <charlesc-memtester@pyropus.ca>
+ * Copyright (C) 2004-2020 Charles Cazabon <charlesc-memtester@pyropus.ca>
  * Licensed under the terms of the GNU General Public License version 2 (only).
  * See the file COPYING for details.
  *
@@ -25,7 +25,17 @@
 char progress[] = "-\\|/";
 #define PROGRESSLEN 4
 #define PROGRESSOFTEN 2500
-#define ONE 0x00000001L
+#define ONE 0x00000001UL
+
+union {
+    unsigned char bytes[UL_LEN/8];
+    ul val;
+} mword8;
+
+union {
+    unsigned short u16s[UL_LEN/16];
+    ul val;
+} mword16;
 
 /* Function definitions. */
 
@@ -41,12 +51,11 @@ int compare_regions(ulv *bufa, ulv *bufb, size_t count) {
             if (use_phys) {
                 physaddr = physaddrbase + (i * sizeof(ul));
                 fprintf(stderr, 
-                        "FAILURE: 0x%08lx != 0x%08lx at physical address "
-                        "0x%08lx.\n", 
+                        "FAILURE: " FMT_TARGET " != " FMT_TARGET " at physical address " FMT_TARGET ".\n",
                         (ul) *p1, (ul) *p2, physaddr);
             } else {
                 fprintf(stderr, 
-                        "FAILURE: 0x%08lx != 0x%08lx at offset 0x%08lx.\n", 
+                        "FAILURE: " FMT_TARGET " != " FMT_TARGET " at offset " FMT_TARGET ".\n",
                         (ul) *p1, (ul) *p2, (ul) (i * sizeof(ul)));
             }
             /* printf("Skipping to next test..."); */
@@ -82,13 +91,11 @@ int test_stuck_address(ulv *bufa, size_t count) {
                 if (use_phys) {
                     physaddr = physaddrbase + (i * sizeof(ul));
                     fprintf(stderr, 
-                            "FAILURE: possible bad address line at physical "
-                            "address 0x%08lx.\n", 
+                            "FAILURE: possible bad address line at physical address " FMT_TARGET ".\n",
                             physaddr);
                 } else {
                     fprintf(stderr, 
-                            "FAILURE: possible bad address line at offset "
-                            "0x%08lx.\n", 
+                            "FAILURE: possible bad address line at offset " FMT_TARGET ".\n",
                             (ul) (i * sizeof(ul)));
                 }
                 printf("Skipping to next test...\n");

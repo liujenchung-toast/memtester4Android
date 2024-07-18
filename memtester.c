@@ -6,13 +6,13 @@
  * Version 2 by Charles Cazabon <charlesc-memtester@pyropus.ca>
  * Version 3 not publicly released.
  * Version 4 rewrite:
- * Copyright (C) 2004-2012 Charles Cazabon <charlesc-memtester@pyropus.ca>
+ * Copyright (C) 2004-2020 Charles Cazabon <charlesc-memtester@pyropus.ca>
  * Licensed under the terms of the GNU General Public License version 2 (only).
  * See the file COPYING for details.
  *
  */
 
-#define __version__ "4.3.0"
+#define __version__ "4.6.0"
 
 #include <stddef.h>
 #include <stdlib.h>
@@ -23,6 +23,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <string.h>
+#include <time.h>
 #include <errno.h>
 
 #include "types.h"
@@ -49,7 +50,7 @@ struct test tests[] = {
     { "Bit Flip", test_bitflip_comparison },
     { "Walking Ones", test_walkbits1_comparison },
     { "Walking Zeroes", test_walkbits0_comparison },
-#ifdef TEST_NARROW_WRITES    
+#ifdef TEST_NARROW_WRITES
     { "8-bit Writes", test_8bit_wide_random },
     { "16-bit Writes", test_16bit_wide_random },
 #endif
@@ -117,7 +118,7 @@ int main(int argc, char **argv) {
     ulv *bufa, *bufb;
     int do_mlock = 1, done_mem = 0;
     int exit_code = 0;
-    int memfd, opt, memshift;
+    int memfd, opt, memshift = 0;
     size_t maxbytes = -1; /* addressable memory, in bytes */
     size_t maxmb = (maxbytes >> 20) + 1; /* addressable memory, in MB */
     /* Device to mmap memory from with -p, default is normal core */
@@ -128,22 +129,23 @@ int main(int argc, char **argv) {
     ul testmask = 0;
 
     printf("memtester version " __version__ " (%d-bit)\n", UL_LEN);
-    printf("Copyright (C) 2001-2012 Charles Cazabon.\n");
+    printf("Copyright (C) 2001-2020 Charles Cazabon.\n");
     printf("Licensed under the GNU General Public License version 2 (only).\n");
     printf("\n");
     check_posix_system();
     pagesize = memtester_pagesize();
     pagesizemask = (ptrdiff_t) ~(pagesize - 1);
     printf("pagesizemask is 0x%tx\n", pagesizemask);
-    
+
     /* If MEMTESTER_TEST_MASK is set, we use its value as a mask of which
        tests we run.
      */
-    if (env_testmask = getenv("MEMTESTER_TEST_MASK")) {
+    env_testmask = getenv("MEMTESTER_TEST_MASK");
+    if (env_testmask) {
         errno = 0;
         testmask = strtoul(env_testmask, 0, 0);
         if (errno) {
-            fprintf(stderr, "error parsing MEMTESTER_TEST_MASK %s: %s\n", 
+            fprintf(stderr, "error parsing MEMTESTER_TEST_MASK %s: %s\n",
                     env_testmask, strerror(errno));
             usage(argv[0]); /* doesn't return */
         }
@@ -179,12 +181,12 @@ int main(int argc, char **argv) {
                 break;
             case 'd':
                 if (stat(optarg,&statbuf)) {
-                    fprintf(stderr, "can not use %s as device: %s\n", optarg, 
+                    fprintf(stderr, "can not use %s as device: %s\n", optarg,
                             strerror(errno));
                     usage(argv[0]); /* doesn't return */
                 } else {
                     if (!S_ISCHR(statbuf.st_mode)) {
-                        fprintf(stderr, "can not mmap non-char device %s\n", 
+                        fprintf(stderr, "can not mmap non-char device %s\n",
                                 optarg);
                         usage(argv[0]); /* doesn't return */
                     } else {
@@ -192,18 +194,18 @@ int main(int argc, char **argv) {
                         device_specified = 1;
                     }
                 }
-                break;              
+                break;
             default: /* '?' */
                 usage(argv[0]); /* doesn't return */
         }
     }
 
     if (device_specified && !use_phys) {
-        fprintf(stderr, 
+        fprintf(stderr,
                 "for mem device, physaddrbase (-p) must be specified\n");
         usage(argv[0]); /* doesn't return */
     }
-    
+
     if (optind >= argc) {
         fprintf(stderr, "need memory argument, in MB\n");
         usage(argv[0]); /* doesn't return */
@@ -310,7 +312,7 @@ int main(int argc, char **argv) {
             fflush(stdout);
             if ((size_t) buf % pagesize) {
                 /* printf("aligning to page -- was 0x%tx\n", buf); */
-                aligned = (void volatile *) ((size_t) buf & pagesizemask) + pagesize;
+                aligned = (void volatile *) (((size_t) buf & pagesizemask) + pagesize);
                 /* printf("  now 0x%tx -- lost %d bytes\n", aligned,
                  *      (size_t) aligned - (size_t) buf);
                  */
@@ -359,6 +361,27 @@ int main(int argc, char **argv) {
     if (!do_mlock) fprintf(stderr, "Continuing with unlocked memory; testing "
                            "will be slower and less reliable.\n");
 
+    /* Do alighnment here as well, as some cases won't trigger above if you
+       define out the use of mlock() (cough HP/UX 10 cough). */
+    if ((size_t) buf % pagesize) {
+        /* printf("aligning to page -- was 0x%tx\n", buf); */
+        aligned = (void volatile *) (((size_t) buf & pagesizemask) + pagesize);
+        /* printf("  now 0x%tx -- lost %d bytes\n", aligned,
+         *      (size_t) aligned - (size_t) buf);
+         */
+        bufsize -= ((size_t) aligned - (size_t) buf);
+    } else {
+        aligned = buf;
+    }
+
+    /* In theory, you might be able to get slightly better error detection if you randomly seed
+       the pseudo-random number generator and run memtester multiple times in sequence.
+       However, that benefit is probably very, very slight and won't matter.  Leaving it unseeded
+       results in a constant seed, so exactly the same values are used test-to-test, giving
+       better reproducibility, so this is disabled by default.  You can uncomment it to enable.
+       Note there are no security implications here */
+    /* srand(time(0)); */
+
     halflen = bufsize / 2;
     count = halflen / sizeof(ul);
     bufa = (ulv *) aligned;
@@ -392,6 +415,8 @@ int main(int argc, char **argv) {
                 exit_code |= EXIT_FAIL_OTHERTEST;
             }
             fflush(stdout);
+            /* clear buffer */
+            memset((void *) buf, 255, wantbytes);
         }
         printf("\n");
         fflush(stdout);
